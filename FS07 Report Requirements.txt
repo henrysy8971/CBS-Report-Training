@@ -1,0 +1,156 @@
+FS07 Report Requirements
+1.  Credit Advice Report  - Create Limit Loan
+
+SELECT CAST ('NEW-TRANSACTION CODE' AS VARCHAR2(20)) AS transaction_code
+     , lcf.client_facility_ref_no AS limit_id
+     , pim.branch
+     , pim.account_no
+     , lcf.limit_available_yn AS verified_yn
+     , CASE WHEN mci.client_id IS NULL THEN mcl.client_name ELSE CASE WHEN mci.title IS NULL THEN mci.first_name || ' ' || mci.last_name ELSE mci.title ||' '|| mci.first_name || ' ' || mci.last_name END END AS client_name
+     , mca.alias AS customer_thai_name
+     , lfl.loan_type AS major_minor_code
+     , CAST ('NEW-MAJOR_MINOR_DESCRIPTION' AS VARCHAR2(500)) AS major_minor_description
+     , CAST ('NEW-LIMIT DESCRIPTION' AS VARCHAR2(500)) AS limit_description
+     , CAST ('NEW-PRODUCT PROGRAM' AS VARCHAR2(500)) AS product_program
+     , CAST ('NEW-BUSINESS CODE' AS VARCHAR2(500)) AS business_code
+     , CAST ('NEW-BOT_BUSINESS CODE' AS VARCHAR2(500)) AS bot_business_code
+     , CAST ('NEW-CREDIT_TYPE' AS VARCHAR2(500)) AS credit_type
+     , lcf.ccy_limit AS currency
+     , lcf.limit_amt AS limit_amount
+     , CAST ('NEW-SOURCE_OF_FUND' AS VARCHAR2(500)) AS source_of_fund
+     , CAST ('NEW-MAIN_PURPOSE_CODE' AS VARCHAR2(500)) AS main_purpose_code
+     , CAST ('NEW-BUSINESS_TYPE' AS VARCHAR2(500)) AS business_type
+     , CAST ('NEW-CONDITION_DEPOSIT' AS VARCHAR2(32000)) AS condition_deposit
+     , CAST ('NEW-INTEREST' AS VARCHAR2(32000)) AS interest
+     , CAST ('NEW-FEE' AS VARCHAR2(32000)) AS fee
+     , lnd.signed_date AS CONTRACT_SIGN_DATE
+     , lnd.start_date AS effective_date
+     , lnd.mature_date AS expiry_date
+     , CAST ('NEW-AUTHORIZE_NO' AS VARCHAR2(500)) AS authorize_no
+     , CAST ('NEW-AUTHORIZE_LEVEL' AS VARCHAR2(500)) AS authorize_level
+     , CAST ('NEW-AUTHORIZE_DATE' AS VARCHAR2(500)) AS authorize_date
+     , CASE WHEN mcl.resident_Yn = 1 THEN 'Resident' ELSE 'Non-Resident' END AS customer_type
+     , CAST ('NEW-COUNTRY_OF_RISK' AS VARCHAR2(500)) AS country_of_risk
+     , CAST ('NEW-RATIO_OF_RISK' AS VARCHAR2(500)) AS ratio_of_risk
+     , CAST ('NEW-BUSINESS_SIZE' AS VARCHAR2(500)) AS business_size
+     , CAST ('NEW-MAJOR_CONDITION' AS VARCHAR2(32000)) AS major_condition
+     , CAST ('NEW-MINOR_CONDITION' AS VARCHAR2(32000)) AS minor_ondition
+     , CAST ('NEW-CONDITION_PRE_APPROVE' AS VARCHAR2(500)) AS condition_pre_approve
+     , CAST ('NEW-CONDITION_OTHER' AS VARCHAR2(500)) AS condition_other
+     , CAST ('NEW-HASHTAG' AS VARCHAR2(500)) AS hashtag
+     , CAST ('NEW-MARKETING_DIVISION' AS VARCHAR2(500)) AS marketing_division
+     , CAST ('NEW-OPERATION_BRANCH' AS VARCHAR2(500)) AS operation_branch
+     , CAST ('NEW-CREDIT_LIMIT_REMARK' AS VARCHAR2(32000)) AS credit_limit_remark
+  FROM (SELECT DISTINCT pch.org_id$
+             , pch.product_type_code AS loan_type
+             , pch.product_category_code AS loan_sub_type
+             , pch.product_code
+             , lfl.facility_code
+          FROM pim_product_catalog_hdr pch
+             , lnd_loan_sub_type lns
+             , lnd_loan_type lnt
+             , lmt_facility_linkage lfl
+         WHERE pch.org_id$ = lns.org_id$
+           AND pch.product_type_code = lns.loan_type
+           AND pch.product_category_code = lns.loan_sub_type
+           AND lnt.org_id$ = lns.org_id$
+           AND lnt.loan_type = lns.loan_type
+           AND pch.org_id$ = lfl.org_id$
+           AND pch.product_code = lfl.product_code
+           AND lfl.domain = 'LOAN'
+       ) lfl
+       , mcl_client mcl
+       , mcl_client_indvl mci
+       , lmt_client_facility lcf
+       , mcl_client_alias mca
+       , pim_master_account pim
+       , lnd_loan lnd
+ WHERE mcl.org_id$ = lcf.org_id$
+   AND mcl.client_id = lcf.client_id
+   AND mcl.org_id$ = mca.org_id$(+)
+   AND mcl.client_id = mca.client_id(+)
+   AND mcl.org_id$ = mci.org_id$(+)
+   AND mcl.client_id = mci.client_id(+)
+   AND mca.alias_type(+) = 'THAI_CLIENT_NAME'
+   AND lfl.org_id$ = lcf.org_id$
+   AND lfl.facility_code = lcf.facility_code
+   AND lfl.org_id$ = pim.org_id$
+   AND lfl.product_code = pim.product_code
+   AND pim.client_id_owner = mcl.client_id
+   AND lcf.client_id = mcl.client_id
+   AND pim.org_id$ = lnd.org_id$
+   AND pim.account_id = lnd.loan_key
+   AND ((mcl.client_no = COALESCE($P{CLIENT_NO}, mcl.client_no) AND mcl.client_short = COALESCE($P{CLIENT_SHORT}, mcl.client_short)) AND lnd.start_date BETWEEN $P{EFFECTIVE_DATE_FROM} AND COALESCE($P{EFFECTIVE_DATE_TO}, $P{EFFECTIVE_DATE_FROM}))
+
+
+2.  Credit Advice Report - Credit Limit O/D 29
+
+SELECT CAST ('NEW-TRANSACTION CODE' AS VARCHAR2(20)) AS transaction_code
+     , lcf.client_facility_ref_no AS limit_id
+     , pim.branch AS branch
+     , lcf.limit_available_yn AS verified_yn
+     , CASE WHEN mci.client_id is null THEN mcl.client_name ELSE CASE WHEN mci.title is null THEN mci.first_name || ' ' || mci.last_name ELSE mci.title ||' '||  mci.first_name || ' ' || mci.last_name END END AS client_name
+     , mca.alias AS customer_thai_name
+     , lfl.product_type_code AS major_minor_code
+     , CAST ('NEW-MAJOR_MINOR_DESCRIPTION' AS VARCHAR2(500)) AS major_minor_description
+     , CAST ('NEW-LIMIT DESCRIPTION' AS VARCHAR2(500)) AS limit_description
+     , CAST ('NEW-PRODUCT PROGRAM' AS VARCHAR2(500)) AS product_program
+     , CAST ('NEW-BUSINESS CODE' AS VARCHAR2(500)) AS business_code
+     , CAST ('NEW-BOT_BUSINESS CODE' AS VARCHAR2(500)) AS bot_business_code
+     , CAST ('NEW-CREDIT_TYPE' AS VARCHAR2(500)) AS credit_type
+     , lcf.ccy_limit AS currency
+     , lcf.limit_amt AS limit_amount
+     , CAST ('NEW-SOURCE_OF_FUND' AS VARCHAR2(500)) AS source_of_fund
+     , CAST ('NEW-MAIN_PURPOSE_CODE' AS VARCHAR2(500)) AS main_purpose_code
+     , CAST ('NEW-BUSINESS_TYPE' AS VARCHAR2(500)) AS business_type
+     , CAST ('NEW-CONDITION_DEPOSIT' AS VARCHAR2(32000)) AS condition_deposit
+     , CAST ('NEW-INTEREST' AS VARCHAR2(32000)) AS interest
+     , CAST ('NEW-FEE' AS VARCHAR2(32000)) AS fee
+     , lcf.limit_available_dt AS contract_sign_date
+     , lcf.limit_available_dt AS effective_date
+     , lcf.limit_expiry_dt AS expiry_date
+     , CAST ('NEW-AUTHORIZE_NO' AS VARCHAR2(500)) AS authorize_no
+     , CAST ('NEW-AUTHORIZE_LEVEL' AS VARCHAR2(500)) AS authorize_level
+     , CAST ('NEW-AUTHORIZE_DATE' AS VARCHAR2(500)) AS authorize_date
+     , CASE WHEN mcl.resident_Yn = 1 THEN 'Resident' ELSE 'Non-Resident' END AS customer_type
+     , CAST ('NEW-COUNTRY_OF_RISK' AS VARCHAR2(500)) AS country_of_risk
+     , CAST ('NEW-RATIO_OF_RISK' AS VARCHAR2(500)) AS ratio_of_risk
+     , CAST ('NEW-BUSINESS_SIZE' AS VARCHAR2(500)) AS business_size
+     , CAST ('NEW-MAJOR_CONDITION' AS VARCHAR2(32000)) AS major_condition
+     , CAST ('NEW-MINOR_CONDITION' AS VARCHAR2(32000)) AS minor_ondition
+     , CAST ('NEW-CONDITION_PRE_APPROVE' AS VARCHAR2(500)) AS condition_pre_approve
+     , CAST ('NEW-CONDITION_OTHER' AS VARCHAR2(500)) AS condition_other
+     , CAST ('NEW-HASHTAG' AS VARCHAR2(500)) AS hashtag
+     , CAST ('NEW-MARKETING_DIVISION' AS VARCHAR2(500)) AS marketing_division
+     , CAST ('NEW-OPERATION_BRANCH' AS VARCHAR2(500)) AS operation_branch
+     , CAST ('NEW-CREDIT_LIMIT_REMARK' AS VARCHAR2(32000)) AS credit_limit_remark
+  FROM ( SELECT distinct pch.org_id$
+              , pch.product_type_code AS product_type_code
+              , pch.product_category_code AS product_category_code
+              , pch.product_code
+              , lfl.facility_code
+           FROM pim_product_catalog_hdr pch
+              , lmt_facility_linkage lfl
+          WHERE pch.org_id$ = lfl.org_id$
+            AND pch.product_code = lfl.product_code
+            AND lfl.domain = 'DEPOSIT'
+        ) lfl
+      , mcl_client mcl
+	  , mcl_client_indvl mci
+	  , lmt_client_facility lcf
+	  , mcl_client_alias mca
+	  , pim_master_account pim
+  WHERE mcl.org_id$ = lcf.org_id$
+    AND mcl.client_id = lcf.client_id
+    AND mcl.org_id$ = mca.org_id$(+)
+    AND mcl.client_id = mca.client_id(+)
+    AND mcl.org_id$ = mci.org_id$(+)
+    AND mcl.client_id = mci.client_id(+)
+    AND mca.alias_type(+) = 'THAI_CLIENT_NAME'
+    AND lfl.org_id$ = lcf.org_id$
+    AND lfl.facility_code = lcf.facility_code
+    AND lfl.org_id$ = pim.org_id$
+    AND lfl.product_code = pim.product_code
+    AND pim.client_id_owner = mcl.client_id
+    AND lcf.client_id = mcl.client_id
+    AND ((mcl.client_no = COALESCE($P{CLIENT_NO}, mcl.client_no) AND mcl.client_short = COALESCE($P{CLIENT_SHORT}, mcl.client_short)) AND lcf.limit_available_dt BETWEEN $P{LIMIT_AVAILABLE_DT_FROM} AND COALESCE($P{LIMIT_AVAILABLE_DT_TO}, $P{LIMIT_AVAILABLE_DT_FROM}))

@@ -1,0 +1,156 @@
+Bank Confirmation
+ENT-FS08 – Bank Confirmation Report
+
+1. Bank Confirmation for Audit Purposes
+
+select mcl.client_no, mcl.Client_Name, 
+mcl.client_short, 
+pim.ccy,
+ppc.product_desc || ' (' || pim.account_no ||')' AS type_of_financial_info, 
+sum(CASE WHEN pib.balance_amt < 0 THEN 0 ELSE pib.balance_amt END) AS principal_outstanding,
+cut.value_dt AS run_date
+from MCL_CLIENT mcl,
+PIM_MASTER_ACCOUNT pim, PIM_MASTER_ACCOUNT_BALANCE pib,
+PIM_PRODUCT_CATALOG_HDR ppc,
+CUT_REGISTRY cut
+where mcl.org_id$ = pim.org_id$
+and mcl.client_id = pim.client_id_owner
+and pim.org_id$ = pib.org_id$
+and pim.account_id = pib.account_id
+and pim.org_id$ = ppc.org_id$
+and pim.domain = ppc.domain
+and pim.product_code = ppc.product_code
+and pim.domain = 'DEPOSIT'
+and pib.balance_type in ('PRINCIPAL', 'INTEREST')
+and mcl.org_id$ = cut.org_id$
+and cut.meta_code = 'CUT_REGISTRY'
+and cut.meta_type = 'REGISTRY'
+and cut.attribute_code = 'runDate'
+--and mcl.client_no in (p_client_no_filter)
+group by mcl.client_no, mcl.Client_Name, 
+mcl.client_short, 
+pim.ccy, ppc.product_desc ,  pim.account_no, cut.value_dt
+UNION
+select mcl.client_no, mcl.Client_Name, 
+mcl.client_short, 
+pim.ccy,
+ppc.product_desc AS type_of_financial_info, 
+sum(CASE WHEN pib.balance_amt < 0 THEN 0 ELSE pib.balance_amt END) AS principal_outstanding,
+cut.value_dt AS run_date
+from MCL_CLIENT mcl,
+PIM_MASTER_ACCOUNT pim, PIM_MASTER_ACCOUNT_BALANCE pib,
+PIM_PRODUCT_CATALOG_HDR ppc,
+CUT_REGISTRY cut
+where mcl.org_id$ = pim.org_id$
+and mcl.client_id = pim.client_id_owner
+and pim.org_id$ = pib.org_id$
+and pim.account_id = pib.account_id
+and pim.org_id$ = ppc.org_id$
+and pim.domain = ppc.domain
+and pim.product_code = ppc.product_code
+and pim.domain = 'LOAN'
+and pib.balance_type in ('PRINCIPAL')
+and mcl.org_id$ = cut.org_id$
+and cut.meta_code = 'CUT_REGISTRY'
+and cut.meta_type = 'REGISTRY'
+and cut.attribute_code = 'runDate'
+--and mcl.client_no in (p_client_no_filter)
+group by mcl.client_no, mcl.Client_Name, 
+mcl.client_short, 
+pim.ccy, ppc.product_desc, cut.value_dt
+
+
+
+2. State Auditor Office Letter
+
+select mcl.client_no, mcl.Client_Name, 
+mcl.client_short, 
+pim.ccy,
+ppc.product_desc || ' (' || pim.account_no ||')' AS type_of_financial_info, 
+sum(CASE WHEN pib.balance_amt < 0 THEN 0 ELSE pib.balance_amt END) AS principal_outstanding, 
+cca.addr1, cca.addr2, cca.addr3,
+csc.country_desc, css.state_desc, 
+cca.postal_code,
+cut.value_dt AS run_date
+from MCL_CLIENT mcl,
+PIM_MASTER_ACCOUNT pim, PIM_MASTER_ACCOUNT_BALANCE pib,
+PIM_PRODUCT_CATALOG_HDR ppc,
+CUT_REGISTRY cut,
+(select cca.org_id$, mcc.client_id, cca.addr1, cca.addr2, cca.addr3, cca.postal_code, cca.country, cca.state, cca.city
+   from MCL_CLIENT_CONTACT mcc, CSD_CONTACT_ADDRESS cca
+   where mcc.org_id$ = cca.org_id$
+   and mcc.contact_ref_no = cca.contact_ref_no
+   and mcc.default_contact_type_yn = 1) cca,
+csd_country csc, csd_state css
+where mcl.org_id$ = pim.org_id$
+and mcl.client_id = pim.client_id_owner
+and pim.org_id$ = pib.org_id$
+and pim.account_id = pib.account_id
+and pim.org_id$ = ppc.org_id$
+and pim.domain = ppc.domain
+and pim.product_code = ppc.product_code
+and pim.domain = 'DEPOSIT'
+and pib.balance_type in ('PRINCIPAL', 'INTEREST')
+and mcl.org_id$ = cut.org_id$
+and cut.meta_code = 'CUT_REGISTRY'
+and cut.meta_type = 'REGISTRY'
+and cut.attribute_code = 'runDate'
+and mcl.org_id$ = cca.org_id$ (+)
+and mcl.client_id = cca.client_id (+)
+and cca.org_id$ = csc.org_id$ (+)
+and cca.country = csc.country (+)
+and cca.org_id$ = css.org_id$ (+)
+and cca.state = css.state (+)
+and cca.country = css.country (+)
+--and mcl.client_no in (p_client_no_filter)
+group by mcl.client_no, mcl.Client_Name, 
+mcl.client_short, 
+pim.ccy, ppc.product_desc ,  pim.account_no, cut.value_dt, cca.addr1, cca.addr2, cca.addr3,
+csc.country_desc, css.state_desc, 
+cca.postal_code
+UNION
+select mcl.client_no, mcl.Client_Name, 
+mcl.client_short, 
+pim.ccy,
+ppc.product_desc AS type_of_financial_info, 
+sum(CASE WHEN pib.balance_amt < 0 THEN 0 ELSE pib.balance_amt END) AS principal_outstanding, 
+cca.addr1, cca.addr2, cca.addr3,
+csc.country_desc, css.state_desc, 
+cca.postal_code,
+cut.value_dt AS run_date
+from MCL_CLIENT mcl,
+PIM_MASTER_ACCOUNT pim, PIM_MASTER_ACCOUNT_BALANCE pib,
+PIM_PRODUCT_CATALOG_HDR ppc,
+CUT_REGISTRY cut,
+(select cca.org_id$, mcc.client_id, cca.addr1, cca.addr2, cca.addr3, cca.postal_code, cca.country, cca.state, cca.city
+   from MCL_CLIENT_CONTACT mcc, CSD_CONTACT_ADDRESS cca
+   where mcc.org_id$ = cca.org_id$
+   and mcc.contact_ref_no = cca.contact_ref_no
+   and mcc.default_contact_type_yn = 1) cca,
+csd_country csc, csd_state css
+where mcl.org_id$ = pim.org_id$
+and mcl.client_id = pim.client_id_owner
+and pim.org_id$ = pib.org_id$
+and pim.account_id = pib.account_id
+and pim.org_id$ = ppc.org_id$
+and pim.domain = ppc.domain
+and pim.product_code = ppc.product_code
+and pim.domain = 'LOAN'
+and pib.balance_type in ('PRINCIPAL')
+and mcl.org_id$ = cut.org_id$
+and cut.meta_code = 'CUT_REGISTRY'
+and cut.meta_type = 'REGISTRY'
+and cut.attribute_code = 'runDate'
+and mcl.org_id$ = cca.org_id$ (+)
+and mcl.client_id = cca.client_id (+)
+and cca.org_id$ = csc.org_id$ (+)
+and cca.country = csc.country (+)
+and cca.org_id$ = css.org_id$ (+)
+and cca.state = css.state (+)
+and cca.country = css.country (+)
+--and mcl.client_no in (p_client_no_filter)
+group by mcl.client_no, mcl.Client_Name, 
+mcl.client_short, 
+pim.ccy, ppc.product_desc , cut.value_dt, cca.addr1, cca.addr2, cca.addr3,
+csc.country_desc, css.state_desc, 
+cca.postal_code

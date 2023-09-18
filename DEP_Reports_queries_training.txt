@@ -1,0 +1,129 @@
+A. DPS-55 Outward Clearing Cheque Return Report --> with 3 reports
+
+1)Cheque Returned Notification
+
+SELECT a.branch
+     , a.tran_date AS return_date
+	 , c.tran_date AS deposit_date
+	 , a.reject_code
+	 , d.reject_desc
+	 , a.remarks
+	 , a.acct_no
+	 , a.cheque_no
+	 , a.tran_amt
+	 , a.org_bank AS paying_bank
+	 , a.org_branch AS paying_branch
+FROM dep_inwd_cheque a
+   , dep_acct b
+   , dep_tran_hist c
+   , dep_chq_reject_code d
+WHERE a.reject_code IS NOT NULL
+  AND a.acct_no = b.acct_no
+  AND b.internal_key = c.internal_key
+  AND a.cheque_no = c.reference
+  AND a.org_bank = c.reference_bank
+  AND a.org_branch = c.reference_branch
+  AND a.reject_code = d.reject_code
+  AND $X{IN, a.branch, BRANCH}
+  AND $X{IN, a.reject_code, REJECT_CODE}
+  AND $X{IN, a.acct_no, ACCT_NO}
+  AND $X{[BETWEEN], a.tran_date, TRAN_DATE_FROM, TRAN_DATE_TO}
+
+2) Debit Note
+SELECT a.branch
+     , a.tran_date AS return_date
+     , c.tran_date AS deposit_date
+     , a.reject_code
+     , d.reject_desc return_reason
+     , a.acct_no
+     , b.acct_desc acct_name
+     , a.cheque_no
+     , a.tran_amt
+     , a.org_bank AS paying_bank
+     , a.org_branch AS paying_branch
+FROM dep_inwd_cheque a
+   , dep_acct b
+   , dep_tran_hist c
+   , dep_chq_reject_code d
+WHERE a.reject_code IS NOT NULL
+  AND a.acct_no = b.acct_no
+  AND b.internal_key = c.internal_key
+  AND a.cheque_no = c.reference
+  AND a.org_bank = c.reference_bank
+  AND a.org_branch = c.reference_branch
+  AND a.reject_code = d.reject_code
+  AND $X{IN, a.branch, BRANCH}
+  AND $X{IN, a.reject_code, REJECT_CODE}
+  AND $X{IN, a.acct_no, ACCT_NO}
+  AND $X{[BETWEEN], a.tran_date, TRAN_DATE_FROM, TRAN_DATE_TO}
+
+3) Cheque return report
+SELECT a.branch
+     , a.tran_date AS return_date
+     , a.reject_code
+	 , c.reject_desc return_reason
+     , a.acct_no
+	 , b.acct_desc AS acct_name
+     , a.cheque_no
+	 , a.tran_amt
+     , a.org_bank AS paying_bank
+	 , a.org_branch AS paying_branch
+FROM dep_inwd_cheque a
+   , dep_acct b
+   , dep_chq_reject_code c
+WHERE a.reject_code IS NOT NULL
+  AND a.acct_no = b.acct_no
+  AND a.reject_code = c.reject_code
+  AND $X{IN, a.branch, BRANCH}
+  AND $X{IN, a.reject_code, REJECT_CODE}
+  AND $X{IN, a.acct_no, ACCT_NO}
+  AND $X{[BETWEEN], a.tran_date, TRAN_DATE_FROM, TRAN_DATE_TO}
+
+** Total cheque amount by Acct No
+** Grand total amount of report
+
+B. DPS-95 Pre-Dormant Report
+
+SELECT a.acct_no
+     , a.acct_desc AS acct_name
+	 , a.actual_bal AS outstanding_balance
+	 , a.last_tran_date AS last_active_date
+	 , DECODE(NVL(b.limit_amt, 0), 0, 'N', 'Y') AS limits
+	 , a.acct_type
+	 , a.branch
+	 , a.ccy AS currency
+FROM dep_acct a
+   , lmt_client_limit b
+WHERE ADD_MONTHS(a.last_tran_date, 12) > cut_env.get_run_date
+  AND a.client_no = b.client_id(+)
+  AND $X{IN, a.acct_type, ACCT_TYPE}
+  AND $X{IN, a.branch, BRANCH}
+
+** Total outstanding balance by currency
+
+C. DPS-78 Cash Deposit Report >= 2 Million
+
+SELECT a.branch
+     , c.client_no AS customer_id
+     , a.acct_no
+	 , a.acct_desc AS acct_name
+     , a.acct_type
+     , b.seq_no AS transaction_number
+     , b.tran_date
+     , b.tran_amt
+     , b.officer_id AS maker
+     , b.override_officer AS checker
+FROM dep_acct a
+   , dep_tran_hist b
+   , mcl_client c
+WHERE a.acct_status <> 'C'
+  AND a.ccy = p_base_ccy
+  AND a.internal_key = b.internal_key
+  AND a.client_no = c.client_id
+  AND b.tran_amt >= 2000000
+  AND $X{[BETWEEN], b.tran_date, TRAN_DATE_FROM, TRAN_DATE_TO}
+
+** Total amount by tran_date
+** Grand total report
+
+C. DPS-85 Account Balance Report - to follow
